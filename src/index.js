@@ -79,23 +79,23 @@ class Cell extends React.Component {
   render () {
     let cell;
     if(this.state.isHidden) {
-      cell = <HiddenCell/>
+      cell = <HiddenCell onClick={() => this.props.onClick()}/>
     } 
 
     if(this.state.isBomb) {
-      cell = <BombCell/>
+      cell = <BombCell onClick={() => this.props.onClick()}/>
     }
     
     if(this.state.isFlag) {
-      cell = <FlagCell/>
+      cell = <FlagCell onClick={() => this.props.onClick()}/>
     }
 
     if(this.state.isNumber) {
-      cell = <NumberCell/>
+      cell = <NumberCell onClick={() => this.props.onClick()}/>
     }
 
     if(this.state.isEmpty) {
-      cell = <EmptyCell/>
+      cell = <EmptyCell onClick={() => this.props.onClick()}/>
     }
 
     return (
@@ -128,11 +128,16 @@ class Game extends React.Component {
   constructor(props) {
     super(props)
     this.renderBoard = this.renderBoard.bind(this)
+    this.plantBombs = this.plantBombs.bind(this)
+    this.gameStart = this.gameStart.bind(this)
+    this.renderCells = this.renderCells.bind(this)
     this.state = {
       gameBoard: [],
+      bombsPosition: null,
       showButton: true,
       height: 8,
-      width: 8
+      width: 8,
+      bombs: 10
     }
   }
 
@@ -140,6 +145,7 @@ class Game extends React.Component {
     return (
       <Cell 
         key={key}
+        onClick={() => this.handleClick()}
       />
     )
   }
@@ -171,21 +177,44 @@ class Game extends React.Component {
     return gameBoardData
   }
 
+  plantBombs(bombs) {
+    let bombArsenal = []
+    let bombPosition
+    for (let i = 0; i < bombs; i++) {
+      bombPosition = {
+        posX: randomNumber(0,7),
+        posY: randomNumber(0,7)
+      }
+      bombArsenal.push(bombPosition)
+    }
+    console.log(bombArsenal)
+  }
+
+  gameStart() {
+    this.renderBoard()
+    this.plantBombs(this.state.bombs)
+  }
+
+  handleClick() {
+    console.log('Click')
+  }
+
   render() {
     return(
       <div className='game'>
         <Board 
           gameBoard = {this.state.gameBoard}
-          width={this.state.width}
-          height={this.state.height}
+          bombsPosition = {this.state.bombsPosition}
+          width = {this.state.width}
+          height = {this.state.height}
         />
         {this.state.showButton ?
           <Button 
             show={this.state.showButton}
             value='Iniciar juego' 
-            onClick={this.renderBoard}
+            onClick={this.gameStart}
           /> 
-          : null}
+        : null}
       </div>
     )
   }
@@ -196,6 +225,6 @@ ReactDOM.render(
   document.getElementById('root')
 )
 
-// function randomNumber(min, max) {
-//   return Math.floor(Math.random() * (max - min)) + min;
-// }
+function randomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
