@@ -5,216 +5,328 @@ import './index.css'
 // This cell component returns a button that represents
 // one cell in the game
 
-function HiddenCell(props) {
-  return (
-    <button 
-      className='square'
-      onClick={props.onClick}
-    >
-      {props.col}
-      {props.row}
-    </button>
-  )
-}
-
-function BombCell(props) {
-  return(
-    <button 
-      className='square'
-      onClick={props.onClick}
-    >
-      {props.col}
-      {props.row}
-    </button>
-  )
-}
-
-function FlagCell(props) {
-  return (
-    <button 
-      className='square'
-      onClick={props.onClick}
-    >
-      {props.col}
-      {props.row}
-    </button>
-  )
-}
-
-function NumberCell(props) {
-  return (
-    <button 
-      className='square'
-      onClick={props.onClick}
-    >
-      {props.col}
-      {props.row}
-    </button>
-  )
-}
-
-function EmptyCell(props) {
-  return (
-    <button 
-      className='square'
-      onClick={props.onClick}
-    >
-      {props.col}
-      {props.row}
-    </button>
-  )
-}
-
 class Cell extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      isHidden: true,
-      isBomb: false,
-      isFlag: false,
-      isNumber: false,
-      isEmpty: false
+  getValue() {
+    const {value} = this.props
+
+    if(!value.isRevealed) {
+      return this.props.value.isFlagged ? "a" : null
     }
+    if(value.isMine) {
+      return "💣"
+    }
+    if (value.neighbour === 0) {
+      return null
+    }
+    return value.neighbour
   }
+
   render () {
-    let cell;
-    if(this.state.isHidden) {
-      cell = <HiddenCell onClick={() => this.props.onClick()}/>
-    } 
-
-    if(this.state.isBomb) {
-      cell = <BombCell onClick={() => this.props.onClick()}/>
-    }
-    
-    if(this.state.isFlag) {
-      cell = <FlagCell onClick={() => this.props.onClick()}/>
-    }
-
-    if(this.state.isNumber) {
-      cell = <NumberCell onClick={() => this.props.onClick()}/>
-    }
-
-    if(this.state.isEmpty) {
-      cell = <EmptyCell onClick={() => this.props.onClick()}/>
-    }
-
+    const {onClick, cMenu} = this.props
     return (
-      cell
+      <div 
+        className='cell'
+        onClick = {onClick}
+        onContextMenu = {cMenu}
+      >
+        {this.getValue()}
+      </div>
     )
   }
 }
-
 //The board component render the entire gameboard
 
 class Board extends React.Component {
-  render() {
-    return(
-      <div className='game-board'>
-        {this.props.gameBoard}
-      </div>
-    )
+  state = {
+    boardData: this.initBoardData(this.props.height, this.props.width, this.props.mines),
+    gameStatus: false,
+    mineCount: this.props.mines,
+    gameWon: false
   }
-}
 
-function Button(props) {
-  return(
-    <button onClick={props.onClick}>
-      {props.value}
-    </button>
-  )
-}
+  createEmptyArray(heigth, width) {
+    let data = []
 
-class Game extends React.Component {
-  constructor(props) {
-    super(props)
-    this.renderBoard = this.renderBoard.bind(this)
-    this.plantBombs = this.plantBombs.bind(this)
-    this.gameStart = this.gameStart.bind(this)
-    this.renderCells = this.renderCells.bind(this)
-    this.state = {
-      gameBoard: [],
-      bombsPosition: null,
-      showButton: true,
-      height: 8,
-      width: 8,
-      bombs: 10
+    for(let i = 0; i < heigth; i++) {
+      data.push([])
+      for(let j = 0; j < width; j++) {
+        data[i][j] = {
+          x: i,
+          y: j,
+          isMine: false,
+          neighbour: 0,
+          isRevealed: false,
+          isEmpty: false,
+          isFlagged: false
+        }
+      }
     }
+    return data
   }
 
-  renderCells(key) {
-    return (
-      <Cell 
-        key={key}
-        onClick={() => this.handleClick()}
-      />
-    )
+  plantMines(data, height, width, mines) {
+    let randomX, randomY, minesPlanted = 0
+
+    while(minesPlanted < mines) {
+      randomX = this.getRandomNumber(width)
+      randomY = this.getRandomNumber(height)
+
+      if(!(data[randomX][randomY].isMine)) {
+        data[randomX][randomY].isMine = true
+        minesPlanted++
+      }
+    }
+    return data
   }
 
-  renderRow(length, key) {
-    let newRow = []
-    for (let i  = 0; i < length; i++) {
-      newRow.push(this.renderCells(i.toString()))
+  getNeighbours(data, height, width) {
+    let updatedData = data
+
+    for(let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
+        if (data[i][j].isMine === false) {
+          let mine = 0
+          let area = this.traverseBoard(data[i][j].x, data[i][j].y, data)
+          area.forEach(value => {
+            console.log(area)
+            if(value.isMine) {
+              mine += 1
+            }
+          })
+          if(mine === 0) {
+            updatedData[i][j].isEmpty = true
+          }
+          updatedData[i][j].neighbour = mine
+        }
+      }
+    }
+    return updatedData
+  }
+
+  traverseBoard(x, y, data) {
+    const el = []
+
+    //up
+    if(x > 0) {
+      el.push(data[x - 1][y])
     }
 
-    return (
-      <div className='board-row' key={key}>
-        {newRow}
-      </div>
-    )
+    //down
+    if(x < this.props.height - 1) {
+      el.push(data[x + 1][y])
+    }
+
+    //left
+    if(x > 0) {
+      el.push(data[x][y - 1])
+    }
+
+    //rigth
+    if(x < this.props.width - 1) {
+      el.push(data[x][y + 1])
+    }
+
+    //top left
+    if(x > 0 && y > 0) {
+      el.push(data[x - 1][y - 1])
+    }
+
+    //top rigth
+    if(x > 0 && y < this.props.width - 1) {
+      el.push(data[x - 1][y + 1])
+    }
+
+    //botton right
+    if(x < this.props.height - 1 && y < this.props.width - 1) {
+      el.push(data[x + 1][y + 1])
+    }
+
+    //bottom left
+    if(x < this.props.height - 1 && y > 0) {
+      el.push(data[x + 1][y - 1])
+    }
+
+    return el
   }
 
-  renderBoard() {
-    let gameBoardData = []
-    for (let i  = 0; i < this.state.height; i++) {
-      gameBoardData.push(this.renderRow(this.state.width, i.toString()))
+  initBoardData(height, width, mines) {
+    let data = this.createEmptyArray(height, width)
+    data = this.plantMines(data, height, width, mines)
+    data = this.getNeighbours(data, height, width)
+
+    return data
+  }
+
+  renderBoard(data) {
+    return data.map((datarow) => {
+      return datarow.map((dataitem) => {
+        return (
+          <div
+            key={dataitem.x * datarow.length + dataitem.y}>
+            <Cell
+              onClick={() => this.handleCellClick(dataitem.x, dataitem.y)}
+              cMenu={() => this.handleContextMenu(dataitem.x, dataitem.y)}
+              value={dataitem}
+            />
+
+            {(datarow[datarow.length - 1] === dataitem ? <div className='clear'></div> : "")}
+
+          </div>
+        )
+      })
+    })
+  }
+
+  handleCellClick(x, y) {
+    if(this.state.boardData[x][y].isRevealed || this.state.boardData[x][y].isFlagged) return
+
+    if(this.state.boardData[x][y].isMine) {
+      this.setState({gameStatus: 'You lost :('})
+      this.revealBoard()
+      alert('Game Over')
+    }
+
+    let updatedData = this.state.boardData
+
+    if(updatedData[x][y].isEmpty) {
+      updatedData = this.revealEmpty(x, y, updatedData)
+    }
+
+    if(this.getHidden(updatedData).length === this.props.mines) {
+      this.setState({gameStatus: 'You Win :D'})
+      this.revealBoard()
+      alert('You Win')
     }
     
     this.setState({
-      gameBoard: gameBoardData,
-      showButton: false
+      boardData: updatedData,
+      mineCount: this.props.mines - this.getFlags(updatedData).length,
+    })
+  }
+
+  revealEmpty(x, y, data) {
+    let area = this.traverseBoard(x, y, data)
+    area.forEach(value =>{
+      if(!value.isFlagged && !value.isRevealed && (value.isEmpty || !value.isMine)) {
+        data[value.x][value.y].isRevealed = true
+        if(value.isEmpty) {
+          this.revealEmpty(value.x, value.y, data)
+        }
+      }
+    })
+    return data
+  }
+
+  handleContextMenu(x, y) {
+    window.oncontextmenu = (e) => {
+      e.preventDefault()
+    }
+
+    let updatedData = this.state.boardData
+    let mines = this.state.mineCount
+
+    if(updatedData[x][y].isRevealed) return
+
+    if(updatedData[x][y].isFlagged) {
+      updatedData[x][y].isFlagged = false
+      mines++
+    } else {
+      updatedData[x][y].isFlagged = true
+      mines--
+    }
+
+    if(mines === 0) {
+      const MineArray = this.getMines(updatedData)
+      const FlagArray = this.getFlags(updatedData)
+
+      if(JSON.stringify(MineArray) === JSON.stringify(FlagArray)) {
+        this.revealBoard()
+        alert('You Win :D')
+      }
+
+      this.setState({
+        boardData: updatedData,
+        mineCount: mines,
+        gameWon: true
+      })
+    }
+  }
+
+  revealBoard() {
+    let updatedData = this.state.boardData
+
+    updatedData.forEach(datarow => {
+      datarow.forEach(dataitem => {
+        dataitem.isRevealed = true
+      })
+    })
+    this.setState({
+      boardData: updatedData
+    })
+  }
+  
+  getHidden(data) {
+    let hiddenArray = []
+
+    data.forEach(datarow => {
+      datarow.forEach(dataitem => {
+        if(!dataitem.isRevealed) {
+          hiddenArray.push(dataitem)
+        }
+      })
     })
 
-    return gameBoardData
+    return hiddenArray
   }
 
-  plantBombs(bombs) {
-    let bombArsenal = []
-    let bombPosition
-    for (let i = 0; i < bombs; i++) {
-      bombPosition = {
-        posX: randomNumber(0,7),
-        posY: randomNumber(0,7)
-      }
-      bombArsenal.push(bombPosition)
-    }
-    console.log(bombArsenal)
+  getFlags(data) {
+    let flagArray = []
+
+    data.forEach(datarow => {
+      datarow.forEach(dataitem => {
+        if(!dataitem.isFlagged) {
+          flagArray.push(dataitem)
+        }
+      })
+    })
+
+    return flagArray
   }
 
-  gameStart() {
-    this.renderBoard()
-    this.plantBombs(this.state.bombs)
-  }
-
-  handleClick() {
-    console.log('Click')
+  getRandomNumber(dimension) {
+    return Math.floor((Math.random() * 1000) + 1) % dimension;
   }
 
   render() {
     return(
-      <div className='game'>
-        <Board 
-          gameBoard = {this.state.gameBoard}
-          bombsPosition = {this.state.bombsPosition}
-          width = {this.state.width}
-          height = {this.state.height}
-        />
-        {this.state.showButton ?
-          <Button 
-            show={this.state.showButton}
-            value='Iniciar juego' 
-            onClick={this.gameStart}
-          /> 
-        : null}
+      <div className='board'>
+        <div className='game-info'>
+          <span className='info'>
+            mines: {this.state.mineCount}
+          </span>
+          <br/>
+          <span className='info'>
+            {this.state.gameStatus}
+          </span>
+        </div>
+        {this.renderBoard(this.state.boardData)}
+      </div>
+    )
+  }
+}
+
+class Game extends React.Component {
+  state = {
+      height: 8,
+      width: 8,
+      mines: 10
+    }
+
+  render() {
+    const { height, width, mines } = this.state;
+    return(
+      <div className="game">
+        <Board height={height} width={width} mines={mines} />
       </div>
     )
   }
@@ -224,7 +336,3 @@ ReactDOM.render(
   <Game />,
   document.getElementById('root')
 )
-
-function randomNumber(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
-}
