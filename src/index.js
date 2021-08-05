@@ -2,15 +2,12 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import './index.css'
 
-// This cell component returns a button that represents
-// one cell in the game
-
 class Cell extends React.Component {
   getValue() {
     const {value} = this.props
 
     if(!value.isRevealed) {
-      return this.props.value.isFlagged ? "a" : null
+      return this.props.value.isFlagged ? "❗" : null
     }
     if(value.isMine) {
       return "💣"
@@ -86,9 +83,8 @@ class Board extends React.Component {
       for (let j = 0; j < width; j++) {
         if (data[i][j].isMine === false) {
           let mine = 0
-          let area = this.traverseBoard(data[i][j].x, data[i][j].y, data)
+          let area = this.traverseBoard(data[i][j].y, data[i][j].x, data)
           area.forEach(value => {
-            console.log(area)
             if(value.isMine) {
               mine += 1
             }
@@ -103,47 +99,47 @@ class Board extends React.Component {
     return updatedData
   }
 
-  traverseBoard(x, y, data) {
+  traverseBoard(y, x, data) {
     const el = []
 
-    //up
-    if(x > 0) {
-      el.push(data[x - 1][y])
+    //ux
+    if(y > 0) {
+      el.push(data[x][y - 1])
     }
 
     //down
-    if(x < this.props.height - 1) {
-      el.push(data[x + 1][y])
+    if(y < this.props.height - 1) {
+      el.push(data[x][y + 1])
     }
 
     //left
     if(x > 0) {
-      el.push(data[x][y - 1])
+      el.push(data[x - 1][y])
     }
 
     //rigth
     if(x < this.props.width - 1) {
-      el.push(data[x][y + 1])
+      el.push(data[x + 1][y])
     }
 
     //top left
-    if(x > 0 && y > 0) {
+    if(y > 0 && x > 0) {
       el.push(data[x - 1][y - 1])
     }
 
     //top rigth
-    if(x > 0 && y < this.props.width - 1) {
-      el.push(data[x - 1][y + 1])
+    if(y > 0 && x < this.props.width - 1) {
+      el.push(data[x + 1][y - 1])
     }
 
     //botton right
-    if(x < this.props.height - 1 && y < this.props.width - 1) {
+    if(y < this.props.height - 1 && x < this.props.width - 1) {
       el.push(data[x + 1][y + 1])
     }
 
     //bottom left
-    if(x < this.props.height - 1 && y > 0) {
-      el.push(data[x + 1][y - 1])
+    if(y < this.props.height - 1 && x > 0) {
+      el.push(data[x - 1][y + 1])
     }
 
     return el
@@ -183,21 +179,23 @@ class Board extends React.Component {
     if(this.state.boardData[x][y].isMine) {
       this.setState({gameStatus: 'You lost :('})
       this.revealBoard()
-      alert('Game Over')
     }
 
     let updatedData = this.state.boardData
 
-    if(updatedData[x][y].isEmpty) {
+    if(updatedData[y][x].isEmpty) {
       updatedData = this.revealEmpty(x, y, updatedData)
+    }
+
+    if(updatedData[x][y].isRevealed === false) {
+      updatedData[x][y].isRevealed = true
     }
 
     if(this.getHidden(updatedData).length === this.props.mines) {
       this.setState({gameStatus: 'You Win :D'})
       this.revealBoard()
-      alert('You Win')
     }
-    
+
     this.setState({
       boardData: updatedData,
       mineCount: this.props.mines - this.getFlags(updatedData).length,
@@ -205,9 +203,9 @@ class Board extends React.Component {
   }
 
   revealEmpty(x, y, data) {
-    let area = this.traverseBoard(x, y, data)
+    let area = this.traverseBoard(y, x, data)
     area.forEach(value =>{
-      if(!value.isFlagged && !value.isRevealed && (value.isEmpty || !value.isMine)) {
+      if(value.isFlagged === false && value.isRevealed === false && (value.isEmpty === true || value.isMine === false)) {
         data[value.x][value.y].isRevealed = true
         if(value.isEmpty) {
           this.revealEmpty(value.x, value.y, data)
@@ -241,15 +239,15 @@ class Board extends React.Component {
 
       if(JSON.stringify(MineArray) === JSON.stringify(FlagArray)) {
         this.revealBoard()
-        alert('You Win :D')
       }
-
-      this.setState({
-        boardData: updatedData,
-        mineCount: mines,
-        gameWon: true
-      })
     }
+
+    this.setState({
+      boardData: updatedData,
+      mineCount: mines,
+      gameStatus: 'You Win :D',
+      gameWon: true
+    })
   }
 
   revealBoard() {
@@ -270,7 +268,7 @@ class Board extends React.Component {
 
     data.forEach(datarow => {
       datarow.forEach(dataitem => {
-        if(!dataitem.isRevealed) {
+        if(dataitem.isRevealed === true) {
           hiddenArray.push(dataitem)
         }
       })
@@ -284,13 +282,27 @@ class Board extends React.Component {
 
     data.forEach(datarow => {
       datarow.forEach(dataitem => {
-        if(!dataitem.isFlagged) {
+        if(dataitem.isFlagged === true) {
           flagArray.push(dataitem)
         }
       })
     })
 
     return flagArray
+  }
+
+  getMines(data) {
+    let mineArray = []
+
+    data.forEach(datarow => {
+      datarow.forEach(dataitem => {
+        if(dataitem.isMine === true) {
+          mineArray.push(dataitem)
+        }
+      })
+    })
+
+    return mineArray
   }
 
   getRandomNumber(dimension) {
