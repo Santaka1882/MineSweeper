@@ -82,6 +82,32 @@ h1,p {
 
 }
 
+@media (min-width: 375px) {
+  .cell-container {
+    height: 38px;
+    width: 38px;
+  }
+
+  .cell {
+    height: 38px;
+    width: 38px;
+    min-width: 38px;
+  }
+}
+
+@media (min-width: 425px) {
+  .cell-container {
+    height: 43px;
+    width: 43px;
+  }
+
+  .cell {
+    height: 43px;
+    width: 43px;
+    min-width: 43px;
+  }
+}
+
 @media (min-width: 700px) {
   .cell-container {
     height: 45px;
