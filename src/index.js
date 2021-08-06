@@ -19,10 +19,16 @@ class Cell extends React.Component {
   }
 
   render () {
-    const {onClick, cMenu} = this.props
+    const {value, onClick, cMenu} = this.props
+    let className = 
+    'cell' + 
+    (value.isRevealed ? '' : ' hidden') +
+    (value.isMine ? ' isMine' : '') +
+    (value.isFlagged ? ' isFlag' : '')
+
     return (
       <div 
-        className='cell'
+        className = {className}
         onClick = {onClick}
         onContextMenu = {cMenu}
       >
@@ -239,14 +245,17 @@ class Board extends React.Component {
 
       if(JSON.stringify(MineArray) === JSON.stringify(FlagArray)) {
         this.revealBoard()
+
+        this.setState({
+          gameStatus: 'You Win :D',
+          gameWon: true
+        })
       }
     }
 
     this.setState({
       boardData: updatedData,
       mineCount: mines,
-      gameStatus: 'You Win :D',
-      gameWon: true
     })
   }
 
