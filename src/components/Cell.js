@@ -30,7 +30,7 @@ export default class Cell extends React.Component {
         onClick = {onClick}
         onContextMenu = {cMenu}
       >
-        {this.getValue()}
+        <span>{this.getValue()}</span>
       </div>
     )
   }

@@ -273,7 +273,7 @@ export default class Board extends React.Component {
     return data.map((datarow) => {
       return datarow.map((dataitem) => {
         return (
-          <div key={dataitem.x * datarow.length + dataitem.y}>
+          <div key={dataitem.x * datarow.length + dataitem.y} className='cell-container'>
             <Cell
               onClick={() => this.handleCellClick(dataitem.x, dataitem.y)}
               cMenu={(e) => this.handleContextMenu(e, dataitem.x, dataitem.y)}
@@ -293,9 +293,11 @@ export default class Board extends React.Component {
           <span className="info">Mines remaining: {this.state.mineCount}</span>
           <h1 className="info">{this.state.gameStatus}</h1>
         </div>
+        <div className='cell-wrapper'>
         {
           this.renderBoard(this.state.boardData)
         }
+        </div>
       </div>
     );
   }
