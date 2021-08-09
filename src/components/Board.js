@@ -7,6 +7,7 @@ export default class Board extends React.Component {
     boardData: this.initBoardData(this.props.height, this.props.width, this.props.mines),
     gameStatus: "Game in progress",
     mineCount: this.props.mines,
+    mineProtect: true
   };
 
   /* Helper Functions */
@@ -54,6 +55,30 @@ export default class Board extends React.Component {
     });
 
     return mineArray;
+  }
+
+  resetFirstBomb(x, y) {
+    //check if first mine, if yes, return
+    if(!this.state.mineProtect) return;
+
+    //change the location of the mine and click that cell
+    let updatedData = this.state.boardData
+    if (updatedData[x][y].isMine) {
+      updatedData[x][y].isMine = false
+      let randomX = this.getRandomNumber(this.props.width)
+      let randomY = this.getRandomNumber(this.props.height)
+      if(!updatedData[randomX][randomY].isMine && updatedData[randomX][randomY] !== updatedData[x][y]) {
+        updatedData[randomX][randomY].isMine = true
+        updatedData[randomX][randomY].isRevealed = false
+        updatedData = this.getNeighbours(updatedData, this.props.height, this.props.width)
+      }
+    }
+    console.log(updatedData)
+    this.setState({
+      boardData: updatedData,
+      mineProtect: false
+    })
+    this.handleCellClick(x, y)
   }
 
   // get random number given a dimension
@@ -128,7 +153,7 @@ export default class Board extends React.Component {
       }
     }
 
-    return (updatedData);
+    return updatedData;
   };
 
   // looks for neighbouring cells and returns them
@@ -209,12 +234,15 @@ export default class Board extends React.Component {
   // Handle User Events
 
   handleCellClick(x, y) {
-
     // check if revealed. return if true.
     if (this.state.boardData[x][y].isRevealed || this.state.boardData[x][y].isFlagged) return null;
 
+    //check if the first cell clicked is mine, if yes reset the bomb
+    if(this.state.boardData[x][y].isMine && this.state.mineProtect) {
+      this.resetFirstBomb(x, y)
+    }
     // check if mine. game over if true
-    if (this.state.boardData[x][y].isMine) {
+    if (this.state.boardData[x][y].isMine && !this.state.mineProtect) {
       this.setState({ gameStatus: "You Lost." });
       this.revealBoard();
     }
@@ -235,6 +263,7 @@ export default class Board extends React.Component {
     this.setState({
       boardData: updatedData,
       mineCount: this.props.mines - this.getFlags(updatedData).length,
+      mineProtect: false
     });
   }
 
@@ -245,6 +274,7 @@ export default class Board extends React.Component {
 
     // check if already revealed
     if (updatedData[x][y].isRevealed) return;
+    if (this.getFlags(updatedData).length === this.props.mines && updatedData[x][y].isFlagged === false) return;
 
     if (updatedData[x][y].isFlagged) {
       updatedData[x][y].isFlagged = false;
